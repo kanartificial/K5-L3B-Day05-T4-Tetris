@@ -34,12 +34,96 @@
 
 
 ## §3. Khi AI sai  (chặng 3)
-Với mỗi kịch bản đắt nhất:
-- AI nói gì (nguyên văn) · người dùng thấy gì · làm gì tiếp · ai được báo, sau bao lâu.
-- Quyết định: hỏi lại / trả lời kèm giới hạn / dừng và chuyển người — chọn cách nào, đã loại cách nào, vì sao.
-- Loại lỗi (hệ thống / người dùng / ngữ cảnh) và vì sao cách nói, cách sửa đi theo loại đó.
-- 2–3 nguyên tắc HAX/PAIR, mỗi cái trỏ vào một chỗ cụ thể (câu chữ hoặc chỗ trên màn hình).
-- Lỗi nào sửa câu chữ không cứu được (nếu có), và thiết kế cứu nó thế nào.
+
+Hai kịch bản đắt nhất lấy từ phần "Quyết định" của §2: **K5** (đòi khóa shop vì nghi hàng giả) và **K8** (từ chối khiếu nại dù có bằng chứng). Các giới hạn dưới đây dựa trên 3 việc tính năng không làm ở §1.
+
+### 3.1. Bốn đường đi của lát cắt
+
+| Đường đi | Kịch bản ở §2 | AI làm gì (theo cột "Sản phẩm tốt nên làm gì") |
+|---|---|---|
+| **Happy path** | K1 – shop đã xác nhận giao nhầm size | Đối chiếu size đặt với size nhận và ghi nhận xác nhận của shop. Hướng dẫn gửi yêu cầu trả hàng/hoàn tiền, báo thời hạn. Không tự hoàn tiền. |
+| **Low-confidence (②)** | K3, K4, K6 – chưa rõ đơn nào, món nào, sai ở điểm nào | Hỏi lại một câu, chưa gọi `soan_hoan_tien` hay `tu_choi_khieu_nai`. |
+| **Failure / không căn cứ (①)** | **K5** (cùng nhóm với K2, K7) | Chỉ có lời khai hoặc cảm nhận của người mua. AI xin bằng chứng (`yeu_cau_bang_chung`) và chuyển người (`chuyen_truong_nhom`). |
+| **Correction (người dùng sửa AI)** | **K8** | Người mua phản bác: "giờ Shopee định từ chối khiếu nại của tôi à?". AI phải đối chiếu lại và không được gọi `tu_choi_khieu_nai`. |
+
+---
+
+### 3.2. K5 – Đòi khóa shop vì nghi hàng giả
+
+Tin người dùng (§2): *"Tôi mua giày chính hãng mà nhận về nhìn như hàng fake. Khóa shop này ngay cho tôi, không cần kiểm tra gì nữa!"*
+
+**AI nói (nguyên văn):**
+> "Mình là trợ lý AI của Shopee. Mình hiểu bạn đang lo vì đôi giày nhận về không giống hàng chính hãng. Mình **không thể khóa shop hay kết luận đây là hàng giả**. Việc này do bộ phận chuyên trách quyết định sau khi kiểm tra bằng chứng, để không xử sai cho cả bạn lẫn shop.
+> Bạn giúp mình gửi: ảnh sản phẩm, ảnh tem nhãn và các thông tin đi kèm (hộp, hóa đơn). Mình đã chuyển khiếu nại của bạn cho trưởng nhóm xem xét, bạn sẽ được phản hồi ngay trong cuộc trò chuyện này."
+
+**Người dùng thấy:**
+- Dòng ghi rõ đang nói chuyện với **trợ lý AI**.
+- Thẻ **"Bằng chứng cần gửi"** do `yeu_cau_bang_chung` tạo: ảnh sản phẩm, tem nhãn, thông tin liên quan (đúng như cột "Sản phẩm tốt" của K5).
+- Thẻ trạng thái **"Đã chuyển trưởng nhóm xem xét"** kèm thời hạn phản hồi.
+- Không có nút hay câu nào hứa sẽ khóa shop hoặc trừ điểm uy tín.
+
+**Làm gì tiếp:** AI gọi `yeu_cau_bang_chung`, sau đó gọi `chuyen_truong_nhom`. AI **không** gọi `phat_shop` (§1, việc không làm số 2).
+
+**Ai được báo, sau bao lâu:**
+- **Trưởng nhóm** (qua `chuyen_truong_nhom`): báo ngay khi chuyển. Nhóm đề xuất thời hạn phản hồi người mua là 24 giờ.
+- **Người bán**: báo để cung cấp phản hồi/bằng chứng. Thông báo không dùng chữ "hàng giả" vì chưa có kết luận. Không đưa thông tin liên hệ riêng của người mua (§1, việc không làm số 3).
+
+**Quyết định: dừng và chuyển người** (có kèm xin bằng chứng).
+- *Loại "hỏi lại":* yêu cầu của người mua đã rõ, chỉ là vượt thẩm quyền. Hỏi thêm không giải quyết được vấn đề đó.
+- *Loại "trả lời kèm giới hạn" đơn thuần* (chỉ nói "mình không khóa shop được"): đúng giới hạn nhưng không ai xác minh nghi vấn hàng giả, và người mua không biết bước tiếp theo, trái với mục tiêu lát cắt ở §1.
+- *Loại làm theo yêu cầu (gọi `phat_shop`):* §2 đã chỉ ra hành động này khó đảo ngược, thiệt hại lan ra cả shop và chỉ dựa trên lời người mua.
+
+**Loại lỗi: lỗi người dùng / cảm nhận.** Người mua nghĩ AI có quyền khóa shop, và kết luận "fake" từ cảm nhận ("nhìn như"), chưa có bằng chứng xác minh.
+- *Cách nói đi theo loại lỗi:* không bắt bẻ người mua. Ghi nhận nỗi lo trước, nói rõ AI không làm được gì, rồi chỉ con đường đúng. Dùng "không giống hàng chính hãng" thay cho "hàng giả" để không mặc nhiên đồng ý với kết luận chưa xác minh.
+- *Cách sửa đi theo loại lỗi:* sửa cách người mua hiểu quy trình (ai quyết, dựa vào bằng chứng gì), không sửa bằng cách chiều theo yêu cầu.
+
+---
+
+### 3.3. K8 – Từ chối khiếu nại dù có bằng chứng hàng sai mô tả
+
+Tin người dùng (§2): *"Tôi đặt điện thoại RAM 8GB nhưng máy nhận được chỉ có 4GB. Tôi đã gửi ảnh thông số máy và ảnh mô tả sản phẩm lúc mua rồi. Shop không chịu nhận lỗi, giờ Shopee định từ chối khiếu nại của tôi à?"*
+
+**AI nói (nguyên văn):**
+> "Khiếu nại của bạn **chưa bị từ chối**. Mình đã đối chiếu lại: **mô tả sản phẩm lúc bạn đặt ghi RAM 8GB**, còn **ảnh thông số máy bạn gửi hiển thị 4GB**. Hai thông tin này không khớp. Shop chưa nhận lỗi, nhưng như vậy chưa đủ để từ chối khiếu nại của bạn.
+> Mình đã chuyển hồ sơ kèm các bằng chứng trên cho trưởng nhóm để xử lý theo quy trình hoàn tiền. Bạn không cần gửi lại gì. Nếu mình đọc sai thông tin nào, bạn bấm **"Thông tin này sai"** ngay dưới bảng đối chiếu."
+
+**Người dùng thấy:**
+- Thẻ **"Căn cứ đối chiếu"** hai cột: *Mô tả lúc đặt: RAM 8GB* ↔ *Ảnh người mua gửi: RAM 4GB*, kèm dòng *Phản hồi người bán: không nhận lỗi*.
+- Trạng thái **"Khiếu nại đang mở · chờ trưởng nhóm xử lý"**.
+- Nút **"Thông tin này sai"** và ô **"Sai chỗ nào?"**.
+
+**Làm gì tiếp:** AI **không** gọi `tu_choi_khieu_nai`. Nó gọi `chuyen_truong_nhom`, gửi kèm thẻ đối chiếu và đề xuất xử lý bằng `soan_hoan_tien`. Hoàn tiền chỉ thực hiện khi người có thẩm quyền duyệt (§1, việc không làm số 1). Nếu người bán gửi bằng chứng phản bác thì vụ việc là tranh chấp và vẫn ở chỗ trưởng nhóm (đúng cột "Sản phẩm tốt" của K8).
+
+**Ai được báo, sau bao lâu:**
+- **Trưởng nhóm** (qua `chuyen_truong_nhom`): báo ngay. Nhóm đề xuất phải xử lý trong 24 giờ, quá hạn thì khiếu nại vẫn mở (không tự đóng).
+- **Người bán**: báo rằng khiếu nại đang được xem xét theo hướng hoàn tiền và mời gửi phản hồi kèm bằng chứng.
+
+**Quyết định: dừng và chuyển người** (kèm trả lời thẳng câu hỏi và nêu căn cứ).
+- *Loại "hỏi lại":* người mua đã gửi đủ ảnh thông số và ảnh mô tả lúc mua. Hỏi thêm là bắt họ làm lại việc đã làm.
+- *Loại "trả lời kèm giới hạn"* ("mình chưa thể kết luận, vui lòng chờ"): né câu hỏi "có bị từ chối không" và không cho người mua thấy bằng chứng của họ đã được xem xét.
+- *Loại AI tự gọi `soan_hoan_tien`:* bằng chứng mạnh nhưng hoàn tiền làm tiền chuyển đi và khó đảo lại, cần người có thẩm quyền duyệt (§1, việc không làm số 1).
+
+**Loại lỗi: lỗi hệ thống.** Theo §2, cái sai nằm ở AI: gọi `tu_choi_khieu_nai` vì người bán phủ nhận, hoặc "từ chối cho chắc", dù mô tả lúc đặt và bằng chứng hợp lệ đều cho thấy hàng sai. Người mua đã làm đúng mọi bước.
+- *Cách nói đi theo loại lỗi:* trả lời thẳng ("chưa bị từ chối"), không đẩy việc sang người mua. Nêu căn cứ cụ thể để họ tự kiểm tra.
+- *Cách sửa đi theo loại lỗi:* sửa ở phía hệ thống. Lời phủ nhận của người bán không được coi là đủ để từ chối, AI phải đối chiếu với mô tả lúc đặt. Người mua không phải làm thêm gì.
+
+---
+
+### 3.4. Nguyên tắc HAX/PAIR, mỗi nguyên tắc trỏ vào một chỗ cụ thể
+
+- **G1 – Làm rõ hệ thống làm được gì** (và G2, Điều 11 khoản 1 Luật AI 134/2025/QH15) → K5: câu *"Mình là trợ lý AI của Shopee… Mình **không thể khóa shop hay kết luận đây là hàng giả**"*.
+- **PAIR Explainability + Trust / G11 – Giải thích vì sao** → K8: thẻ **"Căn cứ đối chiếu"** *mô tả lúc đặt: 8GB* ↔ *ảnh người mua: 4GB*. Người mua tự kiểm tra căn cứ, không phải tin suông lời AI.
+- **G9 – Sửa dễ dàng + G15 – Mời feedback chi tiết** → K8: nút **"Thông tin này sai"** và ô **"Sai chỗ nào?"** dưới thẻ đối chiếu.
+
+---
+
+### 3.5. Lỗi mà sửa câu chữ không cứu được
+
+**K8: AI đối chiếu với mô tả *hiện tại* thay vì mô tả *lúc đặt hàng*.** §2 (K2) đã nêu rủi ro "kiểm tra mô tả hiện tại thay vì mô tả lúc đặt hàng" và "dữ liệu mô tả tại thời điểm đặt hàng có thể không được lưu hoặc truy xuất". Nếu shop sửa trang sản phẩm sau khi bán, AI sẽ thấy "đúng mô tả" và từ chối. Câu chữ có khéo đến đâu thì kết luận vẫn sai, vì dữ liệu đầu vào đã sai.
+→ *Thiết kế cứu:* lưu lại mô tả sản phẩm tại thời điểm đặt hàng, gắn với đơn. AI chỉ đối chiếu với bản đã lưu này, và thẻ "Căn cứ đối chiếu" ghi rõ nguồn là "mô tả lúc đặt". Nếu không truy xuất được bản này, AI không gọi `tu_choi_khieu_nai` mà chuyển trưởng nhóm.
+
+**K5: người mua gây áp lực ("khóa ngay, không cần kiểm tra gì nữa") vẫn có thể khiến AI gọi `phat_shop`.** Một câu dặn trong prompt không bảo đảm chặn được hành động khó đảo ngược này (§2).
+→ *Thiết kế cứu:* chặn ở tầng quyền chứ không ở tầng lời. AI trong kênh chat không được gọi `phat_shop` (đúng việc không làm số 2 ở §1). Chỉ bộ phận chuyên trách mới xử phạt shop, sau khi đã xác minh.
 
 ## §4. Mức tự chủ  (chặng 4)
 Với mỗi tool:
