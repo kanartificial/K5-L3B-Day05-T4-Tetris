@@ -10,6 +10,11 @@
 - Bằng chứng: cột "AI có thể sai thế nào" trỏ về một tool hoặc một dòng dữ liệu của track (hoặc chỗ dữ liệu không có).
 - Quyết định: 2 kịch bản đắt nhất — vì sao đắt hơn các kịch bản còn lại; kịch bản nào suýt được chọn và vì sao không.
 
+| Tên kịch bản | Phủ lớp | Tin người dùng | Lớp | AI có thể sai thế nào (Bằng chứng) | Sản phẩm tốt nên làm gì | Nhãn |
+|--------|--------|--------|--------|--------|--------|--------|
+| **K1 – Người bán thừa nhận giao sai size** | Nguồn sự thật | "Mình đặt áo size L mà nhận được size M, shop cũng xác nhận gửi nhầm. Mình muốn trả hàng hoàn tiền thì làm sao?" | Nguồn sự thật | AI chỉ dựa vào lời người mua mà không đối chiếu đơn hàng; hoặc bỏ qua xác nhận của shop. Liên quan tool `soan_hoan_tien` và dữ liệu mô tả sản phẩm, phân loại size, phản hồi người bán. | Đối chiếu size đã đặt với size thực nhận, ghi nhận xác nhận của shop. Hướng dẫn gửi yêu cầu trả hàng/hoàn tiền, thông báo thời hạn và chờ quy trình xử lý. Không tự động hoàn tiền. | **Nhẹ** |
+| **K2 – Người mua khiếu nại nhưng chưa đủ căn cứ** | Nguồn sự thật | "Nồi chiên ghi 6 lít nhưng tôi đo lòng nồi chỉ được 5 lít. Shop lừa khách, tôi yêu cầu hoàn tiền và khóa shop\!" | Nguồn sự thật | AI tin ngay lời người mua, không phân biệt dung tích tổng thể và dung tích lòng nồi; hoặc kiểm tra mô tả hiện tại thay vì mô tả lúc đặt hàng. Bằng chứng: thiếu dữ liệu đo lường thực tế; dữ liệu mô tả tại thời điểm đặt hàng có thể không được lưu hoặc truy xuất. Liên quan tool `soan_hoan_tien`, `tu_choi_khieu_nai`, `phat_shop`\. | Truy xuất mô tả lúc đặt hàng, yêu cầu bằng chứng từ người mua và phản hồi từ người bán. Nếu chưa đủ căn cứ, thông báo chưa thể kết luận và chuyển nhân viên xem xét. Không tự hoàn tiền, từ chối hoặc xử phạt shop. | **Không chấp nhận được** |
+
 ## §3. Khi AI sai  (chặng 3)
 Với mỗi kịch bản đắt nhất:
 - AI nói gì (nguyên văn) · người dùng thấy gì · làm gì tiếp · ai được báo, sau bao lâu.
