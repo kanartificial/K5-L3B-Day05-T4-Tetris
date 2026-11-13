@@ -144,9 +144,41 @@ Các mức dưới đây là lựa chọn thiết kế đề xuất của nhóm 
 
 Thêm:
 - Tool khó xếp nhất: mỗi người từng chọn gì, cái giá của mỗi phía (trỏ về kịch bản ở §2), nhóm chốt thế nào.
+  - Tool khó xếp nhất: `phat_shop`: Nhóm phân vân giữa hai mức **Cần người duyệt** và **Cấm**:
+  - Cần người duyệt: AI đề xuất xử phạt, nhân viên có thẩm quyền xác nhận. Ưu điểm là xử lý nhanh hơn, nhưng vẫn có nguy cơ gây thiệt hại cho shop nếu đánh giá sai (K5).
+  - Cấm: AI không được trực tiếp xử phạt trong luồng khiếu nại thông thường. Vi phạm nghiêm trọng sẽ được chuyển đến bộ phận chuyên trách, tránh xử phạt nhầm gây ảnh hưởng đến uy tín và hoạt động của cả shop.
+
+  --> **Kết quả thống nhất:** Nhóm chọn mức **Cấm**. AI chỉ được gọi `chuyen_truong_nhom` để chuyển hồ sơ kèm bằng chứng và lý do cần xem xét. Nhóm chấp nhận việc xử lý vi phạm có thể chậm hơn để tránh hậu quả khó khôi phục khi phạt nhầm.
+
+
+
 - Thử mức đã đặt trên 2 kịch bản đắt nhất + 1 kịch bản bình thường: cái sai có bị chặn không? còn việc nào làm khi lẽ ra phải hỏi? người dùng bình thường có phải chờ vô ích không?
+
+| Kịch bản | AI xử lý theo mức đã chọn | Cái sai có bị chặn không? | Có việc nào AI làm khi lẽ ra phải hỏi? | Người dùng có phải chờ vô ích không? |
+|---|---|---|---|---|
+| K5 – Nghi hàng giả, yêu cầu khóa shop | AI không gọi `phat_shop`, mà dùng `chuyen_truong_nhom` để chuyển hồ sơ kèm bằng chứng và lý do cần xem xét. | Có. AI không thể tự trừ điểm hoặc khóa shop chỉ dựa trên lời tố cáo của người mua. | Không. Nếu chưa rõ bằng chứng hoặc thông tin vụ việc, AI phải hỏi thêm trước khi chuyển hồ sơ. | Không phải chờ duyệt việc chuyển hồ sơ. Tuy nhiên, người dùng vẫn phải chờ bộ phận chuyên trách xem xét việc xử lý shop. |
+| K7 – Hoàn tiền khi chưa xác minh khiếu nại | AI đối chiếu mô tả lúc đặt hàng với bằng chứng hai bên. Nếu chưa đủ căn cứ, AI yêu cầu bổ sung bằng chứng hoặc chuyển trưởng nhóm. Nếu đủ căn cứ, AI lập đề xuất hoàn tiền; nhân viên duyệt trước khi gọi `soan_hoan_tien`. | Có. AI không tự hoàn tiền chỉ dựa trên lời khai hoặc hình ảnh chưa được xác minh đầy đủ. | Không. Khi thiếu thông tin về sản phẩm, điều kiện hoàn tiền hoặc bằng chứng, AI phải hỏi hoặc chuyển người xử lý. | Có thể phải chờ nhân viên duyệt, nhưng đây là thời gian chờ cần thiết để tránh người bán mất tiền và hàng khi khiếu nại chưa đủ căn cứ. |
+| K8 – Từ chối khiếu nại dù có bằng chứng hàng sai mô tả | AI đối chiếu mô tả RAM 8GB với bằng chứng sản phẩm thực tế RAM 4GB. Nếu đủ căn cứ, AI lập đề xuất hoàn tiền; nếu có tranh chấp, chuyển trưởng nhóm. Nhân viên duyệt trước khi gọi tool hoàn tiền hoặc từ chối. | Có. AI không được tự đóng khiếu nại khi bằng chứng cho thấy người bán giao hàng không đúng mô tả. | Không. Nếu bằng chứng chưa đủ hoặc còn mâu thuẫn, AI phải yêu cầu bổ sung hoặc chuyển người xử lý. | Có thể phải chờ nhân viên duyệt, nhưng nhóm chấp nhận vì từ chối sai có thể khiến người mua mất quyền lợi và khó khôi phục. |
+
+
 - Luật thêm hoặc tool tách bước (nếu có), và vì sao.
+
+| Tool | Mức tự chủ | Vai trò |
+|---|---|---|
+| `de_xuat_hoan_tien` (bổ sung) | **Tự làm** | AI tổng hợp bằng chứng, lý do và số tiền đề xuất hoàn; không thực hiện giao dịch. |
+| `thuc_hien_hoan_tien` (bổ sung) | **Cần người duyệt** | Chỉ thực hiện hoàn tiền sau khi nhân viên xử lý khiếu nại kiểm tra và xác nhận đề xuất. |
+
+**Lý do:** Việc tách tool giúp AI vẫn chủ động phân tích và đề xuất phương án, nhưng không tự quyết định giao dịch tài chính. Điều này hạn chế nguy cơ hoàn tiền sai trong K7, đồng thời vẫn hỗ trợ xử lý khiếu nại hợp lệ trong K8.
+
+
 - Một mức tự chủ đã đổi lời hứa nào với người dùng.
+
+Ban đầu, sản phẩm hướng đến lời hứa AI tự giải quyết khiếu nại và hoàn tiền cho người mua.
+Sau khi đánh giá cost-of-error, nhóm điều chỉnh thành:
+
+**AI hỗ trợ kiểm tra, đối chiếu mô tả sản phẩm, thu thập bằng chứng và đề xuất hướng xử lý; các quyết định ảnh hưởng trực tiếp đến tiền hoặc quyền lợi của hai bên cần được nhân viên có thẩm quyền xác nhận.**
+
+Như vậy, AI không còn hứa giải quyết mọi khiếu nại ngay lập tức. Thay vào đó, sản phẩm cam kết hỗ trợ xử lý nhanh, minh bạch và có căn cứ, hạn chế gây thiệt hại cho cả người mua lẫn người bán.
 
 ## §5. Prototype  (chặng 5)
 - Link hoặc file · công cụ · phần nào mock · có lời gọi AI thật không.
